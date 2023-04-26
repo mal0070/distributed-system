@@ -74,62 +74,6 @@ public class CMServerApp {
 
     public void startCM()
     {
-        // get current server info from the server configuration file
-        String strSavedServerAddress = null;
-        List<String> localAddressList = null;
-        int nSavedServerPort = -1;
-        String strNewServerAddress = null;
-        String strNewServerPort = null;
-        int nNewServerPort = -1;
-
-        // set config home
-        m_serverStub.setConfigurationHome(Paths.get("."));
-        // set file-path home
-        m_serverStub.setTransferedFileHome(m_serverStub.getConfigurationHome().resolve("server-file-path"));
-
-        localAddressList = CMCommManager.getLocalIPList();
-        if(localAddressList == null) {
-            System.err.println("Local address not found!");
-            return;
-        }
-        strSavedServerAddress = m_serverStub.getServerAddress();
-        nSavedServerPort = m_serverStub.getServerPort();
-
-        // ask the user if he/she would like to change the server info
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("========== start CM");
-        System.out.println("my current address: "+localAddressList.get(0).toString());
-        System.out.println("saved server address: "+strSavedServerAddress);
-        System.out.println("saved server port: "+nSavedServerPort);
-
-        try {
-            System.out.print("new server address (enter for saved value): ");
-            strNewServerAddress = br.readLine().trim();
-            if(strNewServerAddress.isEmpty()) strNewServerAddress = strSavedServerAddress;
-
-            System.out.print("new server port (enter for saved value): ");
-            strNewServerPort = br.readLine().trim();
-            try {
-                if(strNewServerPort.isEmpty())
-                    nNewServerPort = nSavedServerPort;
-                else
-                    nNewServerPort = Integer.parseInt(strNewServerPort);
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
-                return;
-            }
-
-            // update the server info if the user would like to do
-            if(!strNewServerAddress.equals(strSavedServerAddress))
-                m_serverStub.setServerAddress(strNewServerAddress);
-            if(nNewServerPort != nSavedServerPort)
-                m_serverStub.setServerPort(Integer.parseInt(strNewServerPort));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
         boolean bRet = m_serverStub.startCM();
         if(!bRet)
         {
@@ -175,7 +119,7 @@ public class CMServerApp {
         CMServerApp server = new CMServerApp();
         CMServerStub cmStub = server.getServerStub();
         cmStub.setAppEventHandler(server.getServerEventHandler());
-        cmStub.startCM();
+        server.startCM();
 
         System.out.println("Server application is terminated.");
     }

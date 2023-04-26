@@ -3,6 +3,7 @@ import kr.ac.konkuk.ccslab.cm.event.CMEvent;
 import kr.ac.konkuk.ccslab.cm.event.CMFileEvent;
 import kr.ac.konkuk.ccslab.cm.event.CMSessionEvent;
 import kr.ac.konkuk.ccslab.cm.event.handler.CMAppEventHandler;
+import kr.ac.konkuk.ccslab.cm.info.CMConfigurationInfo;
 import kr.ac.konkuk.ccslab.cm.info.CMInfo;
 import kr.ac.konkuk.ccslab.cm.stub.CMServerStub;
 
@@ -33,6 +34,7 @@ public class CMServerEventHandler implements CMAppEventHandler {
     }
     private void processSessionEvent(CMEvent cme)
     {
+        CMConfigurationInfo confInfo = m_serverStub.getCMInfo().getConfigurationInfo();
         CMSessionEvent se = (CMSessionEvent) cme;
         switch(se.getID())
         {

@@ -82,10 +82,6 @@ public class CMClientApp {
             String strPassword = null;
             CMSessionEvent loginAckEvent = null;
             Console console = System.console();
-            if(console == null)
-            {
-                System.err.println("Unable to obtain console.");
-            }
 
             System.out.println("====== login to default server");
             System.out.print("user name: ");

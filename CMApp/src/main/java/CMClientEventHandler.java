@@ -5,6 +5,8 @@ import kr.ac.konkuk.ccslab.cm.stub.CMClientStub;
 
 import javax.swing.*;
 
+
+
 public class CMClientEventHandler implements CMAppEventHandler {
     private CMClientStub clientStub;
     public CMClientEventHandler(CMClientStub clientStub) {
@@ -16,8 +18,27 @@ public class CMClientEventHandler implements CMAppEventHandler {
             case CMInfo.CM_SESSION_EVENT:
                 processSessionEvent(cme);
                 break;
+            case CMInfo.CM_DATA_EVENT:
+                processDataEvent(cme);
+                break;
             case CMInfo.CM_FILE_EVENT:
                 processFileEvent(cme);
+                break;
+            default:
+                return;
+        }
+    }
+    private void processDataEvent(CMEvent cme) {
+        CMDataEvent de = (CMDataEvent) cme;
+        switch(de.getID())
+        {
+            case CMDataEvent.NEW_USER:
+                System.out.println("--> ["+de.getUserName()+"] enters group("+de.getHandlerGroup()+") in session("
+                        +de.getHandlerSession()+").");
+                break;
+            case CMDataEvent.REMOVE_USER:
+                System.out.println("--> ["+de.getUserName()+"] leaves group("+de.getHandlerGroup()+") in session("
+                        +de.getHandlerSession()+").");
                 break;
             default:
                 return;
@@ -44,7 +65,7 @@ public class CMClientEventHandler implements CMAppEventHandler {
             case CMSessionEvent.SESSION_REMOVE_USER:
                 System.out.println("["+se.getUserName()+"] left session");
             default:
-                break;
+                return;
         }
     }
     private void processFileEvent(CMEvent cme)
