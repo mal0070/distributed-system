@@ -67,6 +67,9 @@ public class CMClientApp {
                 case 10:
                     clientFilePush();
                     break;
+                case 12: // logout from default server
+                    testLogoutDS();
+                    break;
                 default:
                     System.err.println("Unknown command.");
                     break;
@@ -215,8 +218,17 @@ public class CMClientApp {
         for(File file : files)
             m_clientStub.pushFile(file.getPath(), receiver);
     }
-
-
+    public void testLogoutDS()
+    {
+        boolean bRequestResult = false;
+        System.out.println("====== logout from default server");
+        bRequestResult = m_clientStub.logoutCM();
+        if(bRequestResult)
+            System.out.println("successfully sent the logout request.");
+        else
+            System.err.println("failed the logout request!");
+        System.out.println("======");
+    }
 
     public static void main(String[] args) {
         CMClientApp client = new CMClientApp();
