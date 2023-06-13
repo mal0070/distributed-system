@@ -18,9 +18,9 @@ public class CMClientEventHandler implements CMAppEventHandler {
             case CMInfo.CM_SESSION_EVENT:
                 processSessionEvent(cme);
                 break;
-           /* case CMInfo.CM_DATA_EVENT:
+           case CMInfo.CM_DATA_EVENT:
                 processDataEvent(cme);
-                break;*/
+                break;
             case CMInfo.CM_FILE_EVENT:
                 processFileEvent(cme);
                 break;
@@ -28,7 +28,7 @@ public class CMClientEventHandler implements CMAppEventHandler {
                 return;
         }
     }
-   /* private void processDataEvent(CMEvent cme) {
+   private void processDataEvent(CMEvent cme) {
         CMDataEvent de = (CMDataEvent) cme;
         switch(de.getID())
         {
@@ -40,10 +40,13 @@ public class CMClientEventHandler implements CMAppEventHandler {
                 System.out.println("--> ["+de.getUserName()+"] leaves group("+de.getHandlerGroup()+") in session("
                         +de.getHandlerSession()+").");
                 break;
+            case CMDataEvent.INHABITANT:
+                 System.out.println("["+de.getUserName()+"] is added to group: "+de.getHandlerSession()+"("+de.getHandlerGroup()+")");
+                 break;
             default:
                 return;
         }
-    }*/
+    }
     private void processSessionEvent(CMEvent cme) {
         CMSessionEvent se = (CMSessionEvent)cme;
         switch(se.getID())

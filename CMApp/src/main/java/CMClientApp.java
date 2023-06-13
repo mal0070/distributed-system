@@ -115,7 +115,7 @@ public class CMClientApp {
                     compareLogicalClocks();
                     break;
                 case 15:
-                    fileShare();
+                    shareAndPushFiles();
                     break;
                 default:
                     System.err.println("Unknown command.");
@@ -307,45 +307,57 @@ public class CMClientApp {
 
 
 
-    public void fileShare() {
+    public void shareAndPushFiles() {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("=== select files to send: ");
+        System.out.println("=== Select files to share or send: ");
         Path transferHome = m_clientStub.getTransferedFileHome();
-        // open file chooser to choose files
+
+        // Open file chooser to choose files
         JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
         fc.setMultiSelectionEnabled(true);
         fc.setCurrentDirectory(transferHome.toFile());
         int fcRet = fc.showOpenDialog(null);
-        if (fcRet != JFileChooser.APPROVE_OPTION) return;
-        File[] files = fc.getSelectedFiles();
+        if (fcRet != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
 
-        for (File file : files)
-            System.out.println("selected file = " + file);
+        File[] files = fc.getSelectedFiles();
         if (files.length < 1) {
             System.err.println("No file selected!");
             return;
         }
 
-        // input file receiver
+        // Input file receiver
         System.out.println("Receiver of files: ");
         System.out.println("Type \"SERVER\" for the server or \"mlim\" for client receiver.");
+        System.out.println("For \"mlim\", you must run CMClientFile before the file transfer.");
         String receiver = scanner.nextLine().trim();
 
-        // send files
+        // Share files and send file transfer requests
         for (File file : files) {
-            // 클라이언트가 자신의 서버로 파일을 전송
-            m_clientStub.pushFile(file.getPath(), receiver, CMInfo.FILE_OVERWRITE);
+            System.out.println("Selected file: " + file);
 
-            // 서버로부터 파일을 전송받을 클라이언트 목록을 얻어옴
-            List<String> serverClients = m_clientStub.getServerInfo().getGroup("CLIENT").getMemberList();
-            serverClients.remove(receiver); // 자신을 제외한 다른 클라이언트들만 남김
-
-            // 다른 클라이언트의 서버로 파일을 전송
-            for (String client : serverClients) {
-                m_clientStub.pushFile(file.getPath(), client, CMInfo.FILE_OVERWRITE);
+            // Share file
+            if (receiver.equalsIgnoreCase("SERVER")) {
+                System.out.println("Sharing file with the server...");
+                m_clientStub.pushFile(file.getPath(), receiver, CMInfo.FILE_OVERWRITE);
+            } else if (receiver.equalsIgnoreCase("mlim")) {
+                System.out.println("Enter the client IDs to share the file with (separated by commas):");
+                String clientIDs = scanner.nextLine().trim();
+                String[] clientIDArray = clientIDs.split(",");
+                for (String clientID : clientIDArray) {
+                    System.out.println("Sharing file with client: " + clientID.trim());
+                    m_clientStub.pushFile(file.getPath(), clientID.trim(), CMInfo.FILE_OVERWRITE);
+                }
+            } else {
+                System.err.println("Invalid receiver specified!");
+                return;
             }
         }
+
+        System.out.println("File sharing and sending completed successfully!");
+    }
 
     }
 
