@@ -203,13 +203,12 @@ public class CMClientApp {
         System.out.println("For \"mlim\", you must run CMClientFile before the file transfer.");
         String receiver = scanner.nextLine().trim();
 
+        CMServerApp serverApp = new CMServerApp();
+        int serverLogicalClock = serverApp.getLogicalClock();
+        int clientLogicalClock = logicalClock;
+
         // send files
         for (File file : files) {
-
-            CMServerApp serverApp = new CMServerApp();
-            int serverLogicalClock = serverApp.getLogicalClock();
-            int clientLogicalClock = logicalClock;
-
             if (serverLogicalClock <= clientLogicalClock) {
                 System.out.println("Client's logical clock is ahead of the server's clock.");
                 m_clientStub.pushFile(file.getPath(), receiver, CMInfo.FILE_OVERWRITE);
@@ -357,8 +356,6 @@ public class CMClientApp {
         }
 
         System.out.println("File sharing and sending completed successfully!");
-    }
-
     }
 
 
