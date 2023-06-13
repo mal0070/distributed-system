@@ -18,9 +18,9 @@ public class CMClientEventHandler implements CMAppEventHandler {
             case CMInfo.CM_SESSION_EVENT:
                 processSessionEvent(cme);
                 break;
-            case CMInfo.CM_DATA_EVENT:
+           /* case CMInfo.CM_DATA_EVENT:
                 processDataEvent(cme);
-                break;
+                break;*/
             case CMInfo.CM_FILE_EVENT:
                 processFileEvent(cme);
                 break;
@@ -28,7 +28,7 @@ public class CMClientEventHandler implements CMAppEventHandler {
                 return;
         }
     }
-    private void processDataEvent(CMEvent cme) {
+   /* private void processDataEvent(CMEvent cme) {
         CMDataEvent de = (CMDataEvent) cme;
         switch(de.getID())
         {
@@ -43,7 +43,7 @@ public class CMClientEventHandler implements CMAppEventHandler {
             default:
                 return;
         }
-    }
+    }*/
     private void processSessionEvent(CMEvent cme) {
         CMSessionEvent se = (CMSessionEvent)cme;
         switch(se.getID())
@@ -124,15 +124,9 @@ public class CMClientEventHandler implements CMAppEventHandler {
                     System.err.print("file path("+fe.getFilePath()+"), size("+fe.getFileSize()+").\n");
                 }
                 break;
-            case CMFileEvent.CANCEL_FILE_SEND:
-            case CMFileEvent.CANCEL_FILE_SEND_CHAN:
-                System.out.println("["+fe.getFileSender()+"] cancelled the file transfer.");
-                break;
-            case CMFileEvent.CANCEL_FILE_RECV_CHAN:
-                System.out.println("["+fe.getFileReceiver()+"] cancelled the file request.");
-                break;
+
         }
-        return;
+        //return;
     }
 }
 
