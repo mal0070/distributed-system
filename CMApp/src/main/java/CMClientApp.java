@@ -8,6 +8,7 @@ import kr.ac.konkuk.ccslab.cm.stub.CMClientStub;
 import kr.ac.konkuk.ccslab.cm.stub.CMServerStub;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.Path;
@@ -32,6 +33,17 @@ public class CMClientApp {
     private Scanner m_scan = null;
 
     private int logicalClock;
+
+    private JFrame frame;
+    private JButton menuButton;
+    private JButton startButton;
+    private JButton terminateButton;
+    private JButton loginButton;
+    private JButton filePushButton;
+    private JButton detectUpdateButton;
+    private JButton compareClocksButton;
+    private JButton deleteFileButton;
+    private JButton fileShareButton;
 
     public void compareLogicalClocks() {
         CMServerApp serverApp = new CMServerApp();
@@ -58,6 +70,34 @@ public class CMClientApp {
 
         sharedClients = new ArrayList<>();
 
+        frame = new JFrame("CM Client Application");
+        frame.setSize(400, 300);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        menuButton = new JButton("Menu");
+        startButton = new JButton("Start CM");
+        terminateButton = new JButton("Terminate CM");
+        loginButton = new JButton("Login");
+        filePushButton = new JButton("File Push");
+        detectUpdateButton = new JButton("Detect Update");
+        compareClocksButton = new JButton("Compare Clocks");
+        deleteFileButton = new JButton("Delete File");
+        fileShareButton = new JButton("File Share");
+
+        JPanel panel = new JPanel(new GridLayout(5, 2));
+        panel.add(menuButton);
+        panel.add(startButton);
+        panel.add(terminateButton);
+        panel.add(loginButton);
+        panel.add(filePushButton);
+        panel.add(detectUpdateButton);
+        panel.add(compareClocksButton);
+        panel.add(deleteFileButton);
+        panel.add(fileShareButton);
+
+        frame.getContentPane().add(panel);
+        frame.setVisible(true);
+
     }
 
     public CMClientStub getClientStub() {
@@ -75,6 +115,64 @@ public class CMClientApp {
         m_scan = new Scanner(System.in);
         String strInput = null;
         int nCommand = -1;
+
+        // Create ActionListeners for buttons
+        ActionListener menuButtonListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Handle menu button click
+                System.out.println("Menu button clicked!");
+            }
+        };
+
+        ActionListener startButtonListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Handle start button click
+                System.out.println("Start button clicked!");
+                testStartCM();
+            }
+        };
+
+        ActionListener terminateButtonListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Handle terminate button click
+                System.out.println("Terminate button clicked!");
+                testTerminateCM();
+            }
+        };
+
+        ActionListener loginButtonListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Handle login button click
+                System.out.println("Login button clicked!");
+                testSyncLoginDS();
+            }
+        };
+
+        ActionListener filePushButtonListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Handle file push button click
+                System.out.println("File Push button clicked!");
+                clientFilePush();
+            }
+        };
+
+        ActionListener detectUpdateButtonListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Handle detect update button click
+                System.out.println("Detect Update button clicked!");
+                startWatchService();
+            }
+        };
+
+        // Set ActionListeners to corresponding buttons
+
+        menuButton.addActionListener(menuButtonListener);
+        startButton.addActionListener(startButtonListener);
+        terminateButton.addActionListener(terminateButtonListener);
+        loginButton.addActionListener(loginButtonListener);
+        filePushButton.addActionListener(filePushButtonListener);
+        detectUpdateButton.addActionListener(detectUpdateButtonListener);
+
         while (m_bRun) {
             System.out.println("Type \"0\" for menu.");
             System.out.print("> ");
@@ -102,21 +200,23 @@ public class CMClientApp {
                 case 11: // synchronously login to default server
                     testSyncLoginDS();
                     break;
-                case 10:
+                case 12:
                     clientFilePush();
                     break;
-                case 12: // logout from default server
+                case 10: // logout from default server
                     testLogoutDS();
                     break;
-                case 13:
+                case 1:
                     startWatchService();
                     break;
-                case 14:
+                case 2:
                     compareLogicalClocks();
                     break;
-                case 15:
+                case 4:
                     fileShare();
                     break;
+                case 3:
+                    deleteFile();;
                 default:
                     System.err.println("Unknown command.");
                     break;
@@ -305,8 +405,80 @@ public class CMClientApp {
         }
     }
 
+    public void fileShare() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("=== Select file to share: ");
+        Path transferHome = m_clientStub.getTransferedFileHome();
 
+        // Open file chooser to choose a file
+        JFileChooser fc = new JFileChooser();
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setCurrentDirectory(transferHome.toFile());
+        int fcRet = fc.showOpenDialog(null);
+        if (fcRet != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
 
+        File fileToShare = fc.getSelectedFile();
+        if (fileToShare == null || !fileToShare.exists()) {
+            System.err.println("Selected file does not exist!");
+            return;
+        }
+
+        // Input clients to share the file with
+        System.out.println("Enter the client IDs to share the file with (separated by commas):");
+        String clientIDs = scanner.nextLine().trim();
+        String[] clientIDArray = clientIDs.split(",");
+        for (String clientID : clientIDArray) {
+            sharedClients.add(clientID.trim());
+        }
+
+        // Send file sharing request to selected clients
+        for (String clientID : sharedClients) {
+            m_clientStub.pushFile(fileToShare.getPath(), clientID, CMInfo.FILE_OVERWRITE);
+        }
+
+        System.out.println("File shared successfully!");
+    }
+
+    public void deleteFile() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("=== Select a file to delete: ");
+        Path transferHome = m_clientStub.getTransferedFileHome();
+
+        // Open file chooser to choose a file
+        JFileChooser fc = new JFileChooser();
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setCurrentDirectory(transferHome.toFile());
+        int fcRet = fc.showOpenDialog(null);
+        if (fcRet != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File fileToDelete = fc.getSelectedFile();
+        if (fileToDelete == null || !fileToDelete.exists()) {
+            System.err.println("Selected file does not exist!");
+            return;
+        }
+
+//        // Confirm file deletion
+//        System.out.println("Are you sure you want to delete the file? (Y/N)");
+//        String confirm = scanner.nextLine().trim();
+//        if (!confirm.equalsIgnoreCase("Y")) {
+//            System.out.println("File deletion canceled.");
+//            return;
+//        }
+
+        // Delete the file
+        boolean deleted = fileToDelete.delete();
+        if (deleted) {
+            System.out.println("File deleted successfully: " + fileToDelete.getAbsolutePath());
+        } else {
+            System.err.println("Failed to delete the file: " + fileToDelete.getAbsolutePath());
+        }
+    }
+
+/*
     public void fileShare() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("=== select files to send: ");
@@ -347,7 +519,12 @@ public class CMClientApp {
             }
         }
 
-    }
+    }*/
+
+
+
+
+
 
 
     public static void main(String[] args) {
