@@ -29,7 +29,6 @@ public class CMClientApp {
     private List<String> sharedClients;
 
 
-    // 추가: 파일과 해당 파일의 논리 시계 값을 저장하는 맵
     private Map<String, Integer> fileVersions;
 
     private CMClientStub m_clientStub;
@@ -39,9 +38,11 @@ public class CMClientApp {
 
     private int logicalClock;
 
-    // Additional GUI components
     private JTextArea fileTextArea;
 
+    // 변수 선언
+    private boolean watchRunning = false;
+    private Thread watchThread;
 
 
     public CMClientApp() {
@@ -129,7 +130,8 @@ public class CMClientApp {
 
         // Create buttons
         JButton startButton = new JButton("Start CM");
-        JButton terminateButton = new JButton("Terminate CM");
+        //JButton terminateButton = new JButton("Terminate CM");
+        JButton stopButton = new JButton("Stop Watch");
         JButton syncLoginButton = new JButton("Sync Login");
         JButton filePushButton = new JButton("Push File");
         JButton logoutButton = new JButton("Logout");
@@ -143,18 +145,19 @@ public class CMClientApp {
 
         // Set button positions
         startButton.setBounds(10, 10, 150, 30);
-        terminateButton.setBounds(170, 10, 150, 30);
+        //terminateButton.setBounds(170, 10, 150, 30);
         syncLoginButton.setBounds(10, 50, 150, 30);
         filePushButton.setBounds(170, 50, 150, 30);
         logoutButton.setBounds(10, 90, 150, 30);
         watchButton.setBounds(170, 90, 150, 30);
+        stopButton.setBounds(170, 10, 150, 30);
         shareAndPushButton.setBounds(10, 130, 150, 30);
         scrollPane.setBounds(330, 10, 200, 150); // Set the position and size of the file text area
 
         // Add buttons and file text area to the frame
         frame.getContentPane().setLayout(null);
         frame.getContentPane().add(startButton);
-        frame.getContentPane().add(terminateButton);
+        frame.getContentPane().add(stopButton);
         frame.getContentPane().add(syncLoginButton);
         frame.getContentPane().add(filePushButton);
         frame.getContentPane().add(logoutButton);
@@ -170,12 +173,12 @@ public class CMClientApp {
             }
         });
 
-        terminateButton.addActionListener(new ActionListener() {
+        /*terminateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 testTerminateCM();
             }
-        });
+        });*/
 
         syncLoginButton.addActionListener(new ActionListener() {
             @Override
@@ -203,7 +206,16 @@ public class CMClientApp {
         watchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                myFileEventWatch();
+                myFileEventWatch(); //버튼 클릭하면 파일 감시 이벤트 시작
+            }
+        });
+
+// 종료 버튼에 이벤트 리스너 등록
+        stopButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 버튼이 클릭되면 파일 감시 스레드 중지
+                stopFileEventWatch();
             }
         });
 
@@ -220,6 +232,39 @@ public class CMClientApp {
         frame.setSize(550, 210);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    // 파일 감시 스레드 시작
+    private void startFileEventWatch() {
+        // 이미 실행 중인 경우 중복 실행 방지
+        if (watchRunning) {
+            return;
+        }
+
+        watchRunning = true;
+
+        // 파일 감시 스레드 시작
+        watchThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // 파일 감시 작업 수행
+                myFileEventWatch();
+
+                // 파일 감시가 종료되면 watchRunning 플래그 변경
+                watchRunning = false;
+            }
+        });
+
+        watchThread.start();
+    }
+
+    // 파일 감시 스레드 중지
+    private void stopFileEventWatch() {
+        // 실행 중인 파일 감시 스레드가 있는지 확인
+        if (watchThread != null && watchThread.isAlive()) {
+            // 파일 감시 스레드 중지
+            watchThread.interrupt();
+        }
     }
 
     public void testSyncLoginDS() {
@@ -298,6 +343,7 @@ public class CMClientApp {
         Scanner scanner = new Scanner(System.in);
         System.out.println("=== select files to send: ");
         Path transferHome = m_clientStub.getTransferedFileHome();
+
         // open file chooser to choose files
         JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
@@ -331,15 +377,15 @@ public class CMClientApp {
         // send files
         for (File file : files) {
             if (serverLogicalClock <= clientLogicalClock) {
-                JOptionPane.showMessageDialog(null, "Client's logical clock is ahead of the server's clock.\nYou can push to the server.",
-                        "Error", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Client's logical clock is ahead of the server's clock (or same).\nYou can push to the server.",
+                        "inform", JOptionPane.INFORMATION_MESSAGE);
                 //System.out.println("Client's logical clock is ahead of the server's clock.");
                 m_clientStub.pushFile(file.getPath(), receiver, CMInfo.FILE_OVERWRITE);
                 serverLogicalClock = clientLogicalClock;
 
             }else{
                 JOptionPane.showMessageDialog(null, "Server's logical clock is ahead of the client's clock.\nYou cannot push to the server.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        "inform", JOptionPane.ERROR_MESSAGE);
                 break;
                 //System.out.println("Server's logical clock is ahead of the client's clock. You cannot push to Server.");
             }
@@ -360,6 +406,7 @@ public class CMClientApp {
     }
 
     public void myFileEventWatch() {
+
         //Path 객체 생성 -> 감시할 디렉토리 지정
         Path watchPath = Paths.get("/Users/imina/Desktop/학교/분산시스템/distributed-system/CMApp/client-file-path");
         try {
@@ -370,9 +417,9 @@ public class CMClientApp {
             watchPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
                     StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
 
-            System.out.println("Watch service started for directory: " + watchPath);
+            JOptionPane.showMessageDialog(null,"Watch service started for directory: " + watchPath);
 
-            Scanner scanner = new Scanner(System.in);
+           Scanner scanner = new Scanner(System.in);
 
             while (true) {
                 WatchKey key; //변경사항이 감지되면 반환할 객체: 변경된 파일/디렉토리의 경로, 이벤트 등의 정보 포함
@@ -398,7 +445,8 @@ public class CMClientApp {
                         m_clientStub.pushFile(createdFile.getPath(), "mlim");
 
                         // 생성된 파일 정보를 출력
-                        System.out.println("Created file: " + createdFile + logicalClock++);
+                        JOptionPane.showMessageDialog(null,"Created file: " + createdFile + logicalClock++);
+                       // System.out.println("Created file: " + createdFile + logicalClock++);
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
                         // 수정된 파일의 경로를 추출
                         Path filePath = ((WatchEvent<Path>) event).context();
@@ -406,7 +454,8 @@ public class CMClientApp {
                         File modifiedFile = absolutePath.toFile();
                         logicalClock++;
                         // 수정된 파일 정보를 출력
-                        System.out.println("Modified file: " + modifiedFile + logicalClock);
+                        JOptionPane.showMessageDialog(null,"Modified file: " + modifiedFile + logicalClock);
+                       // System.out.println("Modified file: " + modifiedFile + logicalClock);
                     } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
                         // 삭제된 파일의 경로를 추출
                         Path filePath = ((WatchEvent<Path>) event).context();
@@ -414,14 +463,18 @@ public class CMClientApp {
                         File deletedFile = absolutePath.toFile();
                         logicalClock++;
                         // 삭제된 파일 정보를 출력
-                        System.out.println("Deleted file: " + deletedFile + logicalClock);
+                        JOptionPane.showMessageDialog(null,"Deleted file: " + deletedFile + logicalClock);
+                        //System.out.println("Deleted file: " + deletedFile + logicalClock);
                     }
+                    // 변경사항 처리 후 WatchKey를 초기화하여 다음 변경사항을 감지할 수 있도록 준비
+                    key.reset();
+
                 }
 
                 // 변경사항 처리 후 WatchKey를 초기화하여 다음 변경사항을 감지할 수 있도록 준비
-                key.reset();
+               // key.reset();
 
-                if (scanner.hasNextLine()) {
+               if (scanner.hasNextLine()) {
                     String userInput = scanner.nextLine();
 
                     // 루프 종료 조건
